@@ -1,0 +1,13 @@
+.reader { flex:1; height:100%; overflow:hidden; display:flex; flex-direction:column; min-height:0; background:#fff; color:#333; }
+.toolbar { display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:1px solid #e5e5e5; font-size:12px; strong { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } > span { color:#888; } select { max-width:44%; min-width:100px; border:1px solid #ddd; background:white; padding:5px; color:#555; } }
+.hint { color:#888; font-size:12px; padding:8px 12px; border-bottom:1px solid #eee; }
+.viewport { flex:1; min-height:0; overflow:auto; padding:16px 24px 40px; }
+.unitLabel { color:#888; font-size:12px; margin-bottom:16px; }
+.source { font-size:15px; line-height:1.85; overflow-wrap:anywhere; mark { background:#ffe7a4; color:inherit; } }
+.paragraph { white-space:pre-wrap; margin:0 0 14px; }
+.heading { white-space:pre-wrap; font-size:19px; font-weight:600; margin:18px 0 12px; }
+.tableScroll { overflow-x:auto; margin:12px 0 20px; table { border-collapse:collapse; min-width:100%; width:max-content; max-width:none; } td { border:1px solid #ddd; min-width:100px; max-width:420px; padding:7px 10px; vertical-align:top; white-space:pre-wrap; } }
+.address { font-size:10px; line-height:1.4; color:#999; user-select:none; }
+.error { padding:12px; color:#913d42; font-size:12px; }
+.status { padding:16px 0; color:#888; font-size:13px; }
+

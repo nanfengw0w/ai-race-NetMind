@@ -1,0 +1,136 @@
+.learningPath {
+  padding: 0;
+}
+
+.pathHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  h3 {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 18px;
+  }
+}
+
+.pathDuration {
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.pathTimeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.pathPhase {
+  min-height: 80px;
+  display: flex;
+  gap: 16px;
+}
+
+.phaseMarker {
+  width: 20px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.phaseDot {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border: 2px solid var(--bg-card);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.phaseLine {
+  width: 2px;
+  flex: 1;
+  margin: 4px 0;
+  background: var(--border);
+}
+
+.phaseContent {
+  flex: 1;
+  padding-bottom: 24px;
+}
+
+.phaseHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.phaseNumber {
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.phaseTitle {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.phaseDuration {
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.phaseTasks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.phaseTask {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.taskStatus {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+
+  &.pending {
+    background: var(--border);
+  }
+}
+
+.taskText {
+  flex: 1;
+}
+
+.taskType {
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+}

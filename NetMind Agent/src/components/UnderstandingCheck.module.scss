@@ -1,0 +1,29 @@
+.card {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #dedede;
+  border-radius: 5px;
+  background: #fff;
+  color: #343434;
+  font-size: 12px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  h4 { margin: 0; font-size: 14px; font-weight: 600; }
+  p { margin: 7px 0; white-space: pre-wrap; }
+  small { color: #777; display: block; }
+  label { display: block; margin-top: 10px; }
+  textarea { display: block; box-sizing: border-box; width: 100%; min-height: 110px; resize: vertical; border: 1px solid #ccc; border-radius: 3px; padding: 8px; background: #fff; color: #333; font: inherit; }
+  button, select { font: inherit; color: #555; background: #fff; border: 1px solid #d5d5d5; border-radius: 3px; padding: 5px 8px; max-width: 100%; }
+  button { cursor: pointer; &:disabled { opacity: .5; cursor: default; } }
+  button:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid #923434; outline-offset: 2px; }
+  details { margin-top: 9px; border-top: 1px solid #eee; padding-top: 7px; }
+  summary { cursor: pointer; color: #666; }
+  blockquote { margin: 5px 0; padding-left: 8px; border-left: 2px solid #ddd; white-space: pre-wrap; }
+}
+.heading { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; justify-content: space-between; }
+.badge { border: 1px solid #e2d5d5; color: #8a3030; padding: 0 5px; border-radius: 3px; font-size: 11px; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; .primary { color: #8a3030; border-color: #bc9292; } }
+.error { color: #963737; }
+.criterion { border-top: 1px solid #eee; padding-top: 8px; margin-top: 8px; }
+.hint { border-left: 2px solid #b88a8a; padding-left: 8px; }

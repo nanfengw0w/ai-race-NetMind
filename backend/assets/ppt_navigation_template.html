@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-netmind-deck="v2" data-netmind-navigation="legacy-dots">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学习主题</title>
+<style id="netmind-ppt-navigation-style">
+  html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+  #deck {
+    position: fixed; inset: 0; display: flex; flex-wrap: nowrap;
+    height: 100vh; transition: transform .7s cubic-bezier(.77,0,.175,1);
+    will-change: transform;
+  }
+  #deck > section.slide {
+    box-sizing: border-box; position: relative; width: 100vw; height: 100vh;
+    flex: 0 0 100vw; min-width: 0; min-height: 0;
+    overflow: auto !important; overscroll-behavior: contain;
+    padding-bottom: 76px; scroll-padding-bottom: 76px;
+  }
+  #nav {
+    position: fixed; z-index: 30; bottom: 18px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 8px; box-sizing: border-box;
+    max-width: calc(100vw - 280px); padding: 8px 14px; overflow-x: auto;
+    background: rgba(20,22,26,.88); border-radius: 999px;
+    scrollbar-width: thin; color: #fff;
+  }
+  #nav .dot {
+    appearance: none; border: 0; padding: 0; flex: 0 0 10px;
+    width: 10px; height: 10px; min-width: 10px; min-height: 10px;
+    border-radius: 999px; background: rgba(255,255,255,.4); cursor: pointer;
+    transition: width .25s ease, flex-basis .25s ease, background .25s ease;
+  }
+  #nav .dot.active { width: 28px; flex-basis: 28px; background: #fff; }
+  #nav .dot:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  #hint {
+    position: fixed; z-index: 29; right: 18px; bottom: 18px;
+    max-width: 230px; color: #343434; background: rgba(255,255,255,.82);
+    padding: 4px 7px; font: 10px/1.4 ui-monospace, monospace; pointer-events: none;
+  }
+  #netmind-ppt-status {
+    position: fixed; width: 1px; height: 1px; padding: 0; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+  #overview {
+    position: fixed; inset: 0; z-index: 100; box-sizing: border-box;
+    overflow: auto; padding: 28px; color: #fff; background: rgba(15,16,19,.97);
+  }
+  #overview[hidden] { display: none; }
+  #overview .overview-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  #overview .overview-heading h2 { margin: 0; font: 600 18px/1.4 system-ui, sans-serif; }
+  #overview .overview-close { padding: 7px 12px; color: #fff; background: transparent; border: 1px solid #777; cursor: pointer; }
+  #overview .overview-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 18px; }
+  #overview .overview-card { min-width: 0; padding: 0; overflow: hidden; cursor: pointer; color: inherit; text-align: left; border: 2px solid #555; background: #202126; }
+  #overview .overview-card[aria-current="page"] { border-color: #fff; }
+  #overview .overview-card:focus-visible { outline: 3px solid #bda08c; outline-offset: 3px; }
+  #overview .overview-preview { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; pointer-events: none; }
+  #overview .overview-preview > section.slide { position: absolute; inset: 0 auto auto 0; box-sizing: border-box; width: 100vw; height: 100vh; overflow: hidden; transform-origin: top left; }
+  #overview .overview-label { display: block; padding: 8px 10px; font: 12px/1.5 system-ui,sans-serif; overflow-wrap: anywhere; }
+  body.low-power #deck { transition: none; }
+  body.low-power #deck > .slide *, body.low-power #deck > .slide *::before, body.low-power #deck > .slide *::after { animation-play-state: paused !important; }
+  @media (max-width: 900px) {
+    #nav { max-width: calc(100vw - 32px); }
+    #hint { bottom: 58px; right: 12px; font-size: 9px; }
+    #overview { padding: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #deck, #nav .dot { transition: none; }
+  }
+</style>
+<!-- PAGE_STYLES_HERE -->
+</head>
+<body>
+<div id="deck">
+<!-- SLIDES_HERE -->
+</div>
+<div id="nav" role="navigation" aria-label="课件翻页"></div>
+<div id="hint">← → 翻页 · B 静态 · ESC 索引</div>
+<output id="netmind-ppt-status" aria-live="polite" aria-atomic="true"></output>
+<!-- PAGE_SCRIPTS_HERE -->
+<script id="netmind-ppt-navigation">
+(() => {
+  'use strict';
+  const boot = () => {
+    const deck = document.getElementById('deck');
+    const nav = document.getElementById('nav');
+    const hint = document.getElementById('hint');
+    const status = document.getElementById('netmind-ppt-status');
+    const slides = Array.from(deck.children).filter(el => el.matches('section.slide'));
+    if (!slides.length) return;
+    const total = slides.length;
+    const KEY = 'guizang-ppt-low-power';
+    let idx = 0, lock = false, overviewOn = false, unlockTimer, playTimer;
+    let wheelTimer, wheelAcc = 0, touchStart = null, lastOverviewFocus = null;
+    let stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (_) { /* opaque iframe */ }
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+    window.__lowPowerMode = stored === '1' || (stored === null && reduced);
+    window.__currentSlideIndex = 0;
+    deck.style.width = `${total * 100}vw`;
+
+    const animations = new Set();
+    const pausedAnimations = new Set();
+    let pipelineIndex = -1;
+    function animateOpacity(el, from, to, delay = 0) {
+      if (window.__lowPowerMode || !el.animate) { el.style.opacity = String(to); return; }
+      const animation = el.animate([{ opacity: from }, { opacity: to }], {
+        duration: 500, delay, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards',
+      });
+      animations.add(animation);
+      animation.onfinish = animation.oncancel = () => animations.delete(animation);
+    }
+    // Optional native animation hooks; page-specific JavaScript may supply its own.
+    if (typeof window.__playSlide !== 'function') {
+      window.__playSlide = i => {
+        animations.forEach(animation => animation.cancel());
+        animations.clear();
+        pipelineIndex = -1;
+        const slide = slides[i];
+        if (!slide) return;
+        const elements = Array.from(slide.querySelectorAll('[data-anim]'));
+        if (slide.dataset.animate === 'pipeline' && !window.__lowPowerMode) {
+          elements.forEach(el => {
+            el.style.opacity = ['step', 'arrow'].includes(el.dataset.anim) ? '0.72' : '1';
+          });
+          return;
+        }
+        elements.forEach((el, n) => {
+          el.style.opacity = '1';
+          animateOpacity(el, 0, 1, n * 80);
+        });
+      };
+    }
+    if (typeof window.__pipeAdvance !== 'function') {
+      window.__pipeAdvance = () => {
+        if (window.__lowPowerMode || slides[idx].dataset.animate !== 'pipeline') return false;
+        const steps = Array.from(slides[idx].querySelectorAll('[data-anim="step"]'));
+        if (pipelineIndex >= steps.length - 1) return false;
+        const step = steps[++pipelineIndex];
+        step.style.opacity = '1';
+        animateOpacity(step, .72, 1);
+        const arrow = slides[idx].querySelectorAll('[data-anim="arrow"]')[pipelineIndex - 1];
+        if (arrow) { arrow.style.opacity = '1'; animateOpacity(arrow, .72, 1); }
+        return true;
+      };
+    }
+    function updateHint() {
+      hint.textContent = `← → 翻页 · B ${window.__lowPowerMode ? '动态' : '静态'} · ESC 索引`;
+      document.body.classList.toggle('low-power', window.__lowPowerMode);
+    }
+    window.__setLowPowerMode = (on, options = {}) => {
+      window.__lowPowerMode = Boolean(on);
+      if (options.persist !== false) {
+        try { localStorage.setItem(KEY, window.__lowPowerMode ? '1' : '0'); } catch (_) {}
+      }
+      if (window.__lowPowerMode) {
+        document.getAnimations?.().forEach(animation => {
+          if (animation.effect?.target && deck.contains(animation.effect.target) && animation.playState === 'running') {
+            pausedAnimations.add(animation);
+            animation.pause();
+          }
+        });
+      } else {
+        pausedAnimations.forEach(animation => {
+          if (animation.playState === 'paused') animation.play();
+        });
+        pausedAnimations.clear();
+      }
+      updateHint();
+      window.dispatchEvent(new CustomEvent('ppt-low-power-change', { detail: { on: window.__lowPowerMode } }));
+      window.__playSlide(idx);
+    };
+    updateHint();
+
+    const dots = slides.map((slide, i) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'dot';
+      button.dataset.i = String(i);
+      button.setAttribute('aria-label', `第 ${i + 1} 页`);
+      button.addEventListener('click', () => go(i));
+      nav.appendChild(button);
+      return button;
+    });
+    function go(n, immediate = false) {
+      if (lock && !immediate) return;
+      const next = Math.max(0, Math.min(total - 1, n));
+      const changed = next !== idx;
+      idx = next;
+      window.__currentSlideIndex = idx;
+      deck.style.transform = `translateX(${-idx * 100}vw)`;
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === idx);
+        if (i === idx) dot.setAttribute('aria-current', 'page');
+        else dot.removeAttribute('aria-current');
+      });
+      // Preserve the legacy light/dark compatibility signal without forcing page colors.
+      const active = slides[idx];
+      document.body.classList.toggle('light-bg', active.dataset.theme === 'light' || active.classList.contains('light'));
+      slides.forEach((slide, i) => {
+        slide.inert = i !== idx;
+        slide.setAttribute('aria-hidden', String(i !== idx));
+      });
+      status.textContent = `第 ${idx + 1} 页，共 ${total} 页`;
+      const dot = dots[idx];
+      const left = dot.offsetLeft - 14;
+      const right = dot.offsetLeft + dot.offsetWidth + 14;
+      if (left < nav.scrollLeft) nav.scrollTo({ left, behavior: 'instant' });
+      else if (right > nav.scrollLeft + nav.clientWidth) nav.scrollTo({ left: right - nav.clientWidth, behavior: 'instant' });
+      clearTimeout(playTimer);
+      const play = () => {
+        window.__playSlide(idx);
+        window.dispatchEvent(new CustomEvent('ppt-slide-change', { detail: { index: idx, total } }));
+      };
+      if (immediate || window.__lowPowerMode || reduced) play();
+      else playTimer = setTimeout(play, 350);
+      if (changed && !immediate && !window.__lowPowerMode && !reduced) {
+        lock = true;
+        clearTimeout(unlockTimer);
+        unlockTimer = setTimeout(() => { lock = false; }, 700);
+      }
+    }
+
+    const overview = document.createElement('div');
+    overview.id = 'overview';
+    overview.hidden = true;
+    overview.setAttribute('role', 'dialog');
+    overview.setAttribute('aria-modal', 'true');
+    overview.setAttribute('aria-label', '课件索引');
+    document.body.appendChild(overview);
+    let overviewResize;
+    function buildOverview() {
+      overview.replaceChildren();
+      const heading = document.createElement('div');
+      heading.className = 'overview-heading';
+      const title = document.createElement('h2');
+      title.textContent = '课件索引';
+      const close = document.createElement('button');
+      close.type = 'button'; close.className = 'overview-close'; close.textContent = '返回课件';
+      close.addEventListener('click', () => toggleOverview(false));
+      heading.append(title, close);
+      const grid = document.createElement('div');
+      grid.className = 'overview-grid';
+      const previews = [];
+      slides.forEach((slide, i) => {
+        const card = document.createElement('button');
+        card.type = 'button'; card.className = 'overview-card';
+        if (i === idx) card.setAttribute('aria-current', 'page');
+        const titleText = slide.querySelector('h1,h2,h3')?.textContent.trim() || `第 ${i + 1} 页`;
+        card.setAttribute('aria-label', `跳转到第 ${i + 1} 页：${titleText}`);
+        const wrap = document.createElement('div');
+        wrap.className = 'overview-preview';
+        const clone = slide.cloneNode(true);
+        clone.inert = true; clone.removeAttribute('aria-hidden');
+        clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+        clone.removeAttribute('id');
+        clone.querySelectorAll('script').forEach(el => el.remove());
+        clone.querySelectorAll('[data-anim]').forEach(el => { el.style.opacity = '1'; });
+        wrap.appendChild(clone);
+        const label = document.createElement('span');
+        label.className = 'overview-label'; label.textContent = `${i + 1} / ${total}　${titleText}`;
+        card.append(wrap, label);
+        card.addEventListener('click', () => { toggleOverview(false); go(i, true); });
+        grid.appendChild(card); previews.push([wrap, clone]);
+      });
+      overview.append(heading, grid);
+      const resize = () => previews.forEach(([wrap, clone]) => {
+        clone.style.transform = `scale(${Math.min(wrap.clientWidth / innerWidth, wrap.clientHeight / innerHeight)})`;
+      });
+      overviewResize?.disconnect();
+      if (typeof ResizeObserver === 'function') {
+        overviewResize = new ResizeObserver(resize); overviewResize.observe(grid);
+      }
+      requestAnimationFrame(resize);
+      close.focus();
+    }
+    function toggleOverview(on = !overviewOn) {
+      overviewOn = on;
+      overview.hidden = !on;
+      deck.inert = on;
+      nav.inert = on;
+      if (on) { lastOverviewFocus = document.activeElement; buildOverview(); }
+      else { overviewResize?.disconnect(); lastOverviewFocus?.focus?.(); }
+    }
+    function editing(target) {
+      return target instanceof Element && Boolean(target.closest('input,textarea,select,button,a,[contenteditable]:not([contenteditable="false"]),[role="slider"],[role="spinbutton"],[role="textbox"]'));
+    }
+    function scrollable(target, dx, dy) {
+      let el = target instanceof Element ? target : target?.parentElement;
+      if (!el || !deck.contains(el)) el = slides[idx];
+      while (el && el !== deck.parentElement) {
+        if (el === deck) break;
+        const style = getComputedStyle(el);
+        if (dy && /auto|scroll/.test(style.overflowY) && el.scrollHeight > el.clientHeight + 1) {
+          if ((dy > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1) || (dy < 0 && el.scrollTop > 1)) return el;
+        }
+        if (dx && /auto|scroll/.test(style.overflowX) && el.scrollWidth > el.clientWidth + 1) {
+          if ((dx > 0 && el.scrollLeft + el.clientWidth < el.scrollWidth - 1) || (dx < 0 && el.scrollLeft > 1)) return el;
+        }
+        el = el.parentElement;
+      }
+      return false;
+    }
+    function forward() {
+      if (lock) return;
+      if (window.__pipeAdvance?.()) return;
+      go(idx + 1);
+    }
+    addEventListener('keydown', event => {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key === 'Escape') {
+        event.preventDefault(); toggleOverview(); return;
+      }
+      if (overviewOn) {
+        if (event.key === 'Tab') {
+          const controls = Array.from(overview.querySelectorAll('button'));
+          const first = controls[0], last = controls[controls.length - 1];
+          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        }
+        return;
+      }
+      if (editing(event.target)) return;
+      if (event.key.toLowerCase() === 'b') {
+        event.preventDefault(); window.__setLowPowerMode(!window.__lowPowerMode); return;
+      }
+      const scrollDirection = ['ArrowDown','PageDown',' '].includes(event.key) ? 1 : ['ArrowUp','PageUp'].includes(event.key) ? -1 : 0;
+      const scrollTarget = scrollDirection && scrollable(event.target, 0, scrollDirection);
+      if (scrollTarget) {
+        event.preventDefault();
+        const distance = event.key.startsWith('Arrow') ? 40 : scrollTarget.clientHeight * .85;
+        scrollTarget.scrollBy({ top: distance * scrollDirection, behavior: window.__lowPowerMode || reduced ? 'instant' : 'smooth' });
+        return;
+      }
+      if (['ArrowRight','PageDown',' ','ArrowDown'].includes(event.key)) { event.preventDefault(); forward(); }
+      else if (['ArrowLeft','PageUp','ArrowUp'].includes(event.key)) { event.preventDefault(); go(idx - 1); }
+      else if (event.key === 'Home') { event.preventDefault(); go(0); }
+      else if (event.key === 'End') { event.preventDefault(); go(total - 1); }
+    });
+    addEventListener('wheel', event => {
+      if (overviewOn || event.ctrlKey || event.defaultPrevented) return;
+      if (nav.contains(event.target) || scrollable(event.target, event.deltaX, event.deltaY)) { wheelAcc = 0; return; }
+      event.preventDefault();
+      if (lock) return;
+      const amount = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+      const pixels = amount * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1);
+      wheelAcc += pixels;
+      if (Math.abs(wheelAcc) > 50) {
+        if (wheelAcc > 0) forward(); else go(idx - 1);
+        wheelAcc = 0;
+      }
+      clearTimeout(wheelTimer); wheelTimer = setTimeout(() => { wheelAcc = 0; }, 150);
+    }, { passive: false });
+    addEventListener('touchstart', event => {
+      if (event.touches.length !== 1 || overviewOn || editing(event.target)) { touchStart = null; return; }
+      touchStart = { x: event.touches[0].clientX, y: event.touches[0].clientY, target: event.target };
+    }, { passive: true });
+    addEventListener('touchend', event => {
+      if (!touchStart || overviewOn || !event.changedTouches.length) return;
+      const dx = event.changedTouches[0].clientX - touchStart.x;
+      const dy = event.changedTouches[0].clientY - touchStart.y;
+      const target = touchStart.target; touchStart = null;
+      if (Math.abs(dx) <= 50 || Math.abs(dx) <= Math.abs(dy) || scrollable(target, -dx, 0)) return;
+      if (dx < 0) forward(); else go(idx - 1);
+    }, { passive: true });
+    go(0, true);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+  else boot();
+})();
+</script>
+</body>
+</html>

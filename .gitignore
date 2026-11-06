@@ -1,0 +1,41 @@
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc
+
+# Runtime data and local inputs
+/backend/data/*
+!/backend/data/.gitkeep
+/base_data/
+/outputs/
+/参考图/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.log
+
+# Dependencies and build output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+node_modules/
+dist/
+build/
+/backend/python_packages/
+
+# Local recordings and submission archives
+*.zip
+*.7z
+*.mp4
+*.mov
+*.mkv

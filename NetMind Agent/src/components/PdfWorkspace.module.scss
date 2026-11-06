@@ -1,0 +1,6 @@
+.workspace { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; background: #fff; }
+.documents { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #e5e5e5; label { display: flex; align-items: center; flex: 1; min-width: 0; gap: 8px; color: #777; font-size: 12px; } select { flex: 1; min-width: 0; max-width: 420px; padding: 5px; border: 1px solid #ddd; background: white; color: #333; font-size: 12px; } }
+.workspace button { padding: 5px 10px; background: #fff; border: 1px solid #ddd; color: #913d42; font-size: 12px; cursor: pointer; &:disabled { opacity: .5; cursor: wait; } }
+.content { display: flex; flex: 1; min-height: 0; min-width: 0; > * { flex: 1; min-width: 0; } }
+.empty { padding: 50px 20px; text-align: center; color: #888; font-size: 13px; }
+.error { padding: 8px 12px; font-size: 12px; color: #913d42; border-bottom: 1px solid #eee; }
